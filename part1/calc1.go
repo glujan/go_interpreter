@@ -6,6 +6,7 @@ import "os"
 import "strconv"
 import "strings"
 
+// Token types
 const (
 	UNKNOWN = iota
 	INTEGER = iota
@@ -14,32 +15,35 @@ const (
 	EOF     = iota
 )
 
-type ErrSyntax string
+type errSyntax string
 
-func (e ErrSyntax) Error() string {
+func (e errSyntax) Error() string {
 	return "ErrSyntax: " + string(e)
 }
 
+// Token keeps Type and Value of user's input
 type Token struct {
 	Type  int
 	Value string
 }
 
+// Interpreter handles user's input
 type Interpreter struct {
 	Text         string
 	Pos          int
 	CurrentToken Token
 }
 
+// Expr parses and interprets user's input
 func (i *Interpreter) Expr() (int, error) {
 	var err error
-	i.CurrentToken, _ = i.GetNextToken()
+	i.CurrentToken, _ = i.getNextToken()
 	if err != nil {
 		return 0, err
 	}
 
 	left := i.CurrentToken
-	err = i.Eat(INTEGER)
+	err = i.eat(INTEGER)
 	if err != nil {
 		return 0, err
 	}
@@ -47,11 +51,11 @@ func (i *Interpreter) Expr() (int, error) {
 	op := i.CurrentToken
 	switch opType := op.Type; opType {
 	case PLUS:
-		err = i.Eat(PLUS)
+		err = i.eat(PLUS)
 	case MINUS:
-		err = i.Eat(MINUS)
+		err = i.eat(MINUS)
 	default:
-		err = i.Eat(UNKNOWN)
+		err = i.eat(UNKNOWN)
 	}
 
 	if err != nil {
@@ -59,7 +63,7 @@ func (i *Interpreter) Expr() (int, error) {
 	}
 
 	right := i.CurrentToken
-	err = i.Eat(INTEGER)
+	err = i.eat(INTEGER)
 	if err != nil {
 		return 0, err
 	}
@@ -78,7 +82,7 @@ func (i *Interpreter) Expr() (int, error) {
 	return result, err
 }
 
-func (i *Interpreter) GetNextToken() (token Token, err error) {
+func (i *Interpreter) getNextToken() (token Token, err error) {
 	if i.Pos > len(i.Text)-1 {
 		return Token{Type: EOF}, nil
 	}
@@ -86,25 +90,25 @@ func (i *Interpreter) GetNextToken() (token Token, err error) {
 	currentChar := string((i.Text[i.Pos]))
 
 	if _, err := strconv.Atoi(currentChar); err == nil {
-		i.Pos += 1
+		i.Pos++
 		token = Token{INTEGER, currentChar}
 	} else if currentChar == "+" {
-		i.Pos += 1
+		i.Pos++
 		token = Token{PLUS, currentChar}
 	} else if currentChar == "-" {
-		i.Pos += 1
+		i.Pos++
 		token = Token{MINUS, currentChar}
 	} else {
-		err = ErrSyntax("Unkown token " + currentChar)
+		err = errSyntax("Unkown token " + currentChar)
 	}
 	return
 }
 
-func (i *Interpreter) Eat(TokenType int) (err error) {
+func (i *Interpreter) eat(TokenType int) (err error) {
 	if i.CurrentToken.Type == TokenType {
-		i.CurrentToken, err = i.GetNextToken()
+		i.CurrentToken, err = i.getNextToken()
 	} else {
-		err = ErrSyntax("Expecting different token")
+		err = errSyntax("Expecting different token")
 	}
 	return
 }
